@@ -1,0 +1,30 @@
+version: "3.7"
+
+services:
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - target: 9090
+        published: 9090
+    volumes:
+      - type: bind
+        source: ./prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  reservations-service:
+    image: reservations-service:v0
+    ports:
+      - target: 8000
+        published: 8080
+
+  monitor:
+    image: monitor:v0
+    ports:
+      - target: 8000
+        published: 8081
+    environment:
+      - RESERVATIONS_SERVICE_URL=http://reservations-service:8000
+      - INTERVAL_SEC=5
