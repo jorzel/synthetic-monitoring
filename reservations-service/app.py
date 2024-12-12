@@ -43,10 +43,10 @@ def observe_http(func):
     return wrapper
 
 
-@app.route("/reservations")
+@app.route("/reservations", methods=["POST"])
 @observe_http
 def reservations():
-    logger.info("Reservation request")
+    logger.info("Reservation request", data=request.data)
     random_duration = (
         random.choice([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 3])
         * random.randint(1, 100)

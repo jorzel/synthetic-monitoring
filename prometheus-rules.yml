@@ -1,0 +1,15 @@
+groups:
+  - name: reservations-service
+    rules:
+      - alert: Synthetic errors rate exceeds 10%
+        for: 30s
+        expr:  sum(rate(synthetic_request_duration_count{result=~"failure"}[1m]))/ sum(rate(synthetic_request_duration_count[1m])) * 100 > 10
+        labels:
+          severity: critical
+
+      - alert: Errors rate exceeds 10%
+        for: 30s
+        expr:   sum(rate(http_request_duration_count{code=~"5.."}[1m])) / sum(rate(http_request_duration_count[1m])) * 100 > 10
+        labels:
+          severity: critical
+

@@ -10,6 +10,9 @@ services:
       - type: bind
         source: ./prometheus.yml
         target: /etc/prometheus/prometheus.yml
+      - type: bind
+        source: ./prometheus-rules.yml
+        target: /etc/prometheus/rules.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'

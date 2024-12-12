@@ -13,6 +13,8 @@ from werkzeug.middleware.dispatcher import DispatcherMiddleware
 logger = structlog.get_logger()
 
 app = Flask(__name__)
+
+# Add endpoint that will expose the metrics
 app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
 
 prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
@@ -33,38 +35,40 @@ HTTP_REQUEST_DURATION = Histogram(
 
 logger.info("Monitor")
 
+def start_monitor():
+    logger.info("Starting monitor")
+    while True:
+        _make_request()     
+        time.sleep(INTERVAL_SEC)
+
+    logger.info("Monitor terminated")
+
+
+def _make_request():
+    logger.info("Sending request to reservations service")
+    endpoint = f"{RESERVATIONS_SERVICE_URL}/reservations"
+    result = 'success'
+    start = time.time()
+    try:
+        response = requests.post(endpoint, data='{"username": "synthetic"}')
+        if response.status_code != 200:
+            result = 'failure'
+    except Exception as e:
+        logger.warn(f"Error: {e}")
+        result = 'failure'
+    finally:
+        end = time.time()
+        HTTP_REQUEST_DURATION.labels(
+            method='POST',
+            url=endpoint,
+            result=result
+        ).observe(end - start)
+
 
 @app.route("/")
 @app.route("/up")
 def up():
     return "I am running"
-
-
-def start_monitor():
-    logger.info("Starting monitor")
-    while True:
-        logger.info("Sending request to reservations service")
-        endpoint = f"{RESERVATIONS_SERVICE_URL}/reservations"
-        result = 'success'
-        start = time.time()
-        try:
-            response = requests.get(endpoint)
-            if response.status_code != 200:
-                result = 'failure'
-        except Exception as e:
-            logger.warn(f"Error: {e}")
-            result = 'failure'
-        finally:
-            end = time.time()
-            HTTP_REQUEST_DURATION.labels(
-                method='GET',
-                url=endpoint,
-                result=result
-            ).observe(end - start)
-
-        time.sleep(INTERVAL_SEC)
-
-    logger.info("Monitor terminated")
 
 
 # Start the monitor in a separate thread in the background
